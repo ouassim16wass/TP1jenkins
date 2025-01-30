@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        CONTAINER_ID = ''
+        CONTAINER_ID = 'd0af895560dd08786a0971e199ec5b609ca6ff6df4666411f1aa728e801425d7'
         SUM_PY_PATH = '/app/sum.py'
         DIR_PATH = 'Dockerfile' 
         TEST_FILE_PATH = 'test_variables.txt' 
@@ -11,7 +11,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    bat 'docker build -t sum-python .'
+                    bat 'docker build -t sum-python-image .'
                 }
             }
         }
