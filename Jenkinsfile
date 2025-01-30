@@ -11,7 +11,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    bat 'docker build -t sum-python-image .'
+                    bat 'docker build -t sum-python .'
                 }
             }
         }
