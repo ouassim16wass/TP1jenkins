@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        CONTAINER_ID = 'e7cdaa21ab21c7e4eb54951d6a91980e6fdfcb76c3427900856627161bf1da96'
+        CONTAINER_ID = ''
         SUM_PY_PATH = '/app/sum.py'
         DIR_PATH = 'Dockerfile' 
         TEST_FILE_PATH = 'test_variables.txt' 
