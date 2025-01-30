@@ -52,4 +52,37 @@ pipeline {
                                 allTestsPassed = false
                             }
                         } catch (Exception e) {
-                            echo "Erreur lors de l'exécution du te
+                            echo "Erreur lors de l'exécution du test: ${e}"
+                            allTestsPassed = false
+                        }
+                    }
+
+                    if (!allTestsPassed) {
+                        error "Certains tests ont échoué."
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    bat 'docker login -u wassim33 -p Wa2sim1611'
+                    bat 'docker tag sum-python-image wassim33/sum-python-image:latest'
+                    bat 'docker push wassim33/sum-python-image:latest'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                if (CONTAINER_ID) {
+                    bat "docker stop ${CONTAINER_ID}"
+                    bat "docker rm ${CONTAINER_ID}"
+                }
+            }
+        }
+    }
+}
