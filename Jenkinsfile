@@ -41,6 +41,7 @@ pipeline {
                 script {
                     // Vérifier si le conteneur est en cours d'exécution avec l'ID
                     def checkContainer = bat(script: "docker ps -q --filter id=${CONTAINER_ID}", returnStdout: true).trim()
+                    echo "Conteneur en cours d'exécution : ${checkContainer}"
 
                     if (checkContainer) {
                         // Lire les variables de test depuis le fichier
@@ -55,6 +56,7 @@ pipeline {
 
                             // Exécuter le script dans le conteneur Docker
                             def output = bat(script: "docker exec ${CONTAINER_ID} python ${SUM_PY_PATH} ${arg1} ${arg2}", returnStdout: true).trim()
+                            echo "Sortie du script de test : ${output}"
                             def result = output.toFloat()
 
                             // Vérification du résultat
