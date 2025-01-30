@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Cloner votre dépôt GitHub
+                // Cloner le dépôt GitHub
                 git 'https://github.com/ouassim16wass/TP1jenkins.git'
             }
         }
@@ -30,6 +30,7 @@ pipeline {
                     // Lancer le conteneur en mode détaché
                     def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
                     CONTAINER_ID = output
+                    echo "Conteneur lancé avec ID: ${CONTAINER_ID}"
                 }
             }
         }
@@ -37,26 +38,33 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    // Lire les variables de test depuis le fichier
-                    def testLines = readFile(TEST_FILE_PATH).split('\n')
+                    // Vérifier si le conteneur est en cours d'exécution
+                    def checkContainer = bat(script: "docker ps -q -f id=${CONTAINER_ID}", returnStdout: true).trim()
 
-                    // Exécuter les tests pour chaque ligne
-                    for (line in testLines) {
-                        def vars = line.split(' ')
-                        def arg1 = vars[0]
-                        def arg2 = vars[1]
-                        def expectedSum = vars[2].toFloat()
+                    if (checkContainer) {
+                        // Lire les variables de test depuis le fichier
+                        def testLines = readFile(TEST_FILE_PATH).split('\n')
 
-                        // Exécuter le script dans le conteneur Docker
-                        def output = bat(script: "docker exec ${CONTAINER_ID} python ${SUM_PY_PATH} ${arg1} ${arg2}", returnStdout: true).trim()
-                        def result = output.toFloat()
+                        // Exécuter les tests pour chaque ligne
+                        for (line in testLines) {
+                            def vars = line.split(' ')
+                            def arg1 = vars[0]
+                            def arg2 = vars[1]
+                            def expectedSum = vars[2].toFloat()
 
-                        // Vérification du résultat
-                        if (result == expectedSum) {
-                            echo "Test réussi : ${arg1} + ${arg2} = ${result}"
-                        } else {
-                            error "Test échoué : ${arg1} + ${arg2} attendu ${expectedSum}, obtenu ${result}"
+                            // Exécuter le script dans le conteneur Docker
+                            def output = bat(script: "docker exec ${CONTAINER_ID} python ${SUM_PY_PATH} ${arg1} ${arg2}", returnStdout: true).trim()
+                            def result = output.toFloat()
+
+                            // Vérification du résultat
+                            if (result == expectedSum) {
+                                echo "Test réussi : ${arg1} + ${arg2} = ${result}"
+                            } else {
+                                error "Test échoué : ${arg1} + ${arg2} attendu ${expectedSum}, obtenu ${result}"
+                            }
                         }
+                    } else {
+                        error "Le conteneur avec l'ID ${CONTAINER_ID} n'est pas en cours d'exécution."
                     }
                 }
             }
@@ -65,8 +73,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Connexion au Docker Hub et déploiement de l'image
+                    // Connexion au Docker Hub
                     bat 'docker login -u wassim33 -p Wa2sim1611'
+
+                    // Taguer l'image et pousser vers Docker Hub
                     bat 'docker tag sum-python-image wassim33/sum-python-image:latest'
                     bat 'docker push wassim33/sum-python-image:latest'
                 }
