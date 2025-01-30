@@ -4,7 +4,7 @@ pipeline {
         CONTAINER_ID = ''
         SUM_PY_PATH = '/app/sum.py'
         DIR_PATH = 'Dockerfile' 
-        TEST_FILE_PATH = 'fichiertest_variables.txt' 
+        TEST_FILE_PATH = './test_variables.txt' 
     }
 
     stages {
