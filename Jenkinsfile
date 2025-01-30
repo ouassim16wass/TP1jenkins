@@ -29,7 +29,7 @@ pipeline {
                 script {
                     // Lancer le conteneur en mode détaché et récupérer l'ID du conteneur
                     def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
-                    // Extraire seulement l'ID du conteneur
+                    // Extraire seulement l'ID du conteneur (supprimer les caractères de retour à la ligne)
                     CONTAINER_ID = output.split('\r\n')[0].trim()
                     echo "Conteneur lancé avec ID: ${CONTAINER_ID}"
                 }
