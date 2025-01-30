@@ -54,9 +54,9 @@ pipeline {
         stage('Deploy to DockerHub') {
             steps {
                 echo 'Deploying to DockerHub...'
-                sh 'docker login -u your_dockerhub_username -p your_dockerhub_password'
-                sh 'docker tag sum-python-image your_dockerhub_username/sum-python-image:latest'
-                sh 'docker push your_dockerhub_username/sum-python-image:latest'
+                sh 'docker login -u wassim33 -p Wa2sim1611'
+                sh 'docker tag sum-python-image wassim33/sum-python-image:latest'
+                sh 'docker push wassim33/sum-python-image:latest'
             }
         }
     }
