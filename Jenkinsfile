@@ -3,35 +3,51 @@ pipeline {
     environment {
         CONTAINER_ID = ''
         SUM_PY_PATH = '/app/sum.py'
-        DIR_PATH = 'Dockerfile'
-        TEST_FILE_PATH = 'test_variables.txt'
+        DIR_PATH = 'Dockerfile' 
+        TEST_FILE_PATH = 'fichiertest_variables.txt' 
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/ouassim16wass/TP1jenkins.git'
-            }
-        }
-
         stage('Build') {
             steps {
-                bat 'docker build -t sum-python-image .'
+                script {
+                    bat 'docker build -t sum-python-image .'
+                }
             }
         }
 
         stage('Run') {
             steps {
                 script {
-                    // Lancer le conteneur en mode détaché et récupérer l'ID
-                    def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
-                    CONTAINER_ID = output
-                    echo "Conteneur lancé avec ID: ${CONTAINER_ID}"
+                    def output = bat(script: 'docker run -d sum-python-image', returnStdout: true)
+                    CONTAINER_ID = output.trim()
                 }
             }
         }
 
-        
+        stage('Test') {
+            steps {
+                script {
+                    def testLines = readFile(TEST_FILE_PATH).split('\n')
+
+                    for (line in testLines) {
+                        def vars = line.split(' ')
+                        def arg1 = vars[0]
+                        def arg2 = vars[1]
+                        def expectedSum = vars[2].toFloat()
+
+                        def output = bat(script: "docker exec ${CONTAINER_ID} python ${SUM_PY_PATH} ${arg1} ${arg2}", returnStdout: true).trim()
+                        def result = output.toFloat()
+
+                        if (result == expectedSum) {
+                            echo "Test réussi : ${arg1} + ${arg2} = ${result}"
+                        } else {
+                            error "Test échoué : ${arg1} + ${arg2} attendu ${expectedSum}, obtenu ${result}"
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Deploy') {
             steps {
@@ -47,10 +63,8 @@ pipeline {
     post {
         always {
             script {
-                if (CONTAINER_ID) {
-                    bat "docker stop ${CONTAINER_ID}"
-                    bat "docker rm ${CONTAINER_ID}"
-                }
+                bat "docker stop ${CONTAINER_ID}"
+                bat "docker rm ${CONTAINER_ID}"
             }
         }
     }
