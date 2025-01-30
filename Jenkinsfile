@@ -4,7 +4,7 @@ pipeline {
         CONTAINER_ID = ''
         SUM_PY_PATH = '/app/sum.py'
         DIR_PATH = 'Dockerfile' 
-        TEST_FILE_PATH = 'test_variables.txt' 
+        TEST_FILE_PATH = 'test_variables.txt'
     }
 
     stages {
@@ -18,7 +18,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Construire l'image Docker
+                    // Construire l'image Docker en utilisant Docker sur localhost
                     bat 'docker build -t sum-python-image .'
                 }
             }
@@ -29,7 +29,7 @@ pipeline {
                 script {
                     // Lancer le conteneur en mode détaché et récupérer l'ID du conteneur
                     def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
-                    // Extraire l'ID du conteneur, il n'y a pas besoin de split
+                    // Extraire l'ID du conteneur
                     CONTAINER_ID = output
                     echo "Conteneur lancé avec ID: ${CONTAINER_ID}"
                 }
