@@ -1,18 +1,17 @@
 pipeline {
     agent any
-
     environment {
         CONTAINER_ID = ''
-        SUM_PY_PATH = 'sum.py'
-        DIR_PATH = '.'
-        TEST_FILE_PATH = 'variables.txt'
+        SUM_PY_PATH = '/app/sum.py'
+        DIR_PATH = 'Dockerfile' 
+        TEST_FILE_PATH = 'fichiertest_variables.txt' 
     }
 
     stages {
         stage('Build') {
             steps {
                 script {
-                    sh "docker build -t sum-container ${DIR_PATH}"
+                    bat 'docker build -t sum-python-image .'
                 }
             }
         }
@@ -20,8 +19,8 @@ pipeline {
         stage('Run') {
             steps {
                 script {
-                    def output = sh(script: 'docker run -d sum-container', returnStdout: true).trim()
-                    CONTAINER_ID = output
+                    def output = bat(script: 'docker run -d sum-python-image', returnStdout: true)
+                    CONTAINER_ID = output.trim()
                 }
             }
         }
@@ -30,31 +29,22 @@ pipeline {
             steps {
                 script {
                     def testLines = readFile(TEST_FILE_PATH).split('\n')
+
                     for (line in testLines) {
                         def vars = line.split(' ')
                         def arg1 = vars[0]
                         def arg2 = vars[1]
                         def expectedSum = vars[2].toFloat()
 
-                        def output = sh(script: "docker exec ${CONTAINER_ID} python /app/sum.py ${arg1} ${arg2}", returnStdout: true).trim()
-
+                        def output = bat(script: "docker exec ${CONTAINER_ID} python ${SUM_PY_PATH} ${arg1} ${arg2}", returnStdout: true).trim()
                         def result = output.toFloat()
 
                         if (result == expectedSum) {
-                            echo "Test réussi pour ${arg1} + ${arg2}"
+                            echo "Test réussi : ${arg1} + ${arg2} = ${result}"
                         } else {
-                            error "Test échoué pour ${arg1} + ${arg2}. Attendu: ${expectedSum}, obtenu: ${result}"
+                            error "Test échoué : ${arg1} + ${arg2} attendu ${expectedSum}, obtenu ${result}"
                         }
                     }
-                }
-            }
-        }
-
-        stage('Post') {
-            steps {
-                script {
-                    sh "docker stop ${CONTAINER_ID}"
-                    sh "docker rm ${CONTAINER_ID}"
                 }
             }
         }
@@ -62,10 +52,19 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    sh "docker login -u your-dockerhub-username -p your-dockerhub-password"
-                    sh "docker tag sum-container your-dockerhub-username/sum-container"
-                    sh "docker push your-dockerhub-username/sum-container"
+                    bat 'docker login -u wassim33 -p Wa2sim1611'
+                    bat 'docker tag sum-python-image wassim33/sum-python-image:latest'
+                    bat 'docker push wassim33/sum-python-image:latest'
                 }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                bat "docker stop ${CONTAINER_ID}"
+                bat "docker rm ${CONTAINER_ID}"
             }
         }
     }
