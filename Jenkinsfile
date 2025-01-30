@@ -19,8 +19,12 @@ pipeline {
         stage('Run') {
             steps {
                 script {
-                    def output = bat(script: 'docker run -d sum-python-image', returnStdout: true)
-                    CONTAINER_ID = output.trim()
+                    def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
+                    CONTAINER_ID = output
+                    echo "Container ID: ${CONTAINER_ID}"
+                    
+                    // Vérifie que le conteneur est en cours d'exécution
+                    bat "docker ps -q --filter id=${CONTAINER_ID}"
                 }
             }
         }
@@ -29,6 +33,7 @@ pipeline {
             steps {
                 script {
                     def testLines = readFile(TEST_FILE_PATH).split('\n')
+                    def allTestsPassed = true
 
                     for (line in testLines) {
                         def vars = line.split(' ')
@@ -36,36 +41,15 @@ pipeline {
                         def arg2 = vars[1]
                         def expectedSum = vars[2].toFloat()
 
-                        def output = bat(script: "docker exec ${CONTAINER_ID} python ${SUM_PY_PATH} ${arg1} ${arg2}", returnStdout: true).trim()
-                        def result = output.toFloat()
+                        try {
+                            def output = bat(script: "docker exec ${CONTAINER_ID} python ${SUM_PY_PATH} ${arg1} ${arg2}", returnStdout: true).trim()
+                            def result = output.toFloat()
 
-                        if (result == expectedSum) {
-                            echo "Test réussi : ${arg1} + ${arg2} = ${result}"
-                        } else {
-                            error "Test échoué : ${arg1} + ${arg2} attendu ${expectedSum}, obtenu ${result}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    bat 'docker login -u wassim33 -p Wa2sim1611'
-                    bat 'docker tag sum-python-image wassim33/sum-python-image:latest'
-                    bat 'docker push wassim33/sum-python-image:latest'
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            script {
-                bat "docker stop ${CONTAINER_ID}"
-                bat "docker rm ${CONTAINER_ID}"
-            }
-        }
-    }
-}
+                            if (result == expectedSum) {
+                                echo "Test réussi : ${arg1} + ${arg2} = ${result}"
+                            } else {
+                                echo "Test échoué : ${arg1} + ${arg2} attendu ${expectedSum}, obtenu ${result}"
+                                allTestsPassed = false
+                            }
+                        } catch (Exception e) {
+                            echo "Erreur lors de l'exécution du te
