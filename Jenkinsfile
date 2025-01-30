@@ -18,7 +18,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Construire l'image Docker en utilisant Docker sur localhost
+                    // Construire l'image Docker
                     bat 'docker build -t sum-python-image .'
                 }
             }
@@ -29,7 +29,7 @@ pipeline {
                 script {
                     // Lancer le conteneur en mode détaché et récupérer l'ID du conteneur
                     def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
-                    // Extraire l'ID du conteneur
+                    // Extraire seulement l'ID du conteneur
                     CONTAINER_ID = output
                     echo "Conteneur lancé avec ID: ${CONTAINER_ID}"
                 }
