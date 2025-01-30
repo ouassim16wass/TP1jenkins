@@ -27,7 +27,7 @@ pipeline {
         stage('Run') {
             steps {
                 script {
-                    // Lancer le conteneur en mode détaché et récupérer l'ID
+                    // Lancer le conteneur en mode détaché et récupérer l'ID du conteneur
                     def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
                     CONTAINER_ID = output
                     echo "Conteneur lancé avec ID: ${CONTAINER_ID}"
@@ -38,7 +38,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    // Vérifier si le conteneur est en cours d'exécution
+                    // Vérifier si le conteneur est en cours d'exécution avec l'ID
                     def checkContainer = bat(script: "docker ps -q --filter id=${CONTAINER_ID}", returnStdout: true).trim()
 
                     if (checkContainer) {
