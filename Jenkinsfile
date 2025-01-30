@@ -88,8 +88,10 @@ pipeline {
         always {
             script {
                 // Arrêter et supprimer le conteneur Docker après l'exécution
-                bat "docker stop ${CONTAINER_ID}"
-                bat "docker rm ${CONTAINER_ID}"
+                if (CONTAINER_ID) {
+                    bat "docker stop ${CONTAINER_ID}"
+                    bat "docker rm ${CONTAINER_ID}"
+                }
             }
         }
     }
