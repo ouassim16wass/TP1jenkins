@@ -78,7 +78,7 @@ pipeline {
                         echo "Logging into DockerHub securely..."
                         // Utilisation du token DockerHub pour l'authentification
                         bat """
-                        echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USERNAME% --password-stdin
+                        docker login -u %DOCKERHUB_USERNAME% -p %DOCKERHUB_PASSWORD%
                         """
 
                         def imageName = "sum-calculator"
