@@ -81,7 +81,7 @@ pipeline {
                         docker login -u %DOCKERHUB_USERNAME% -p %DOCKERHUB_PASSWORD%
                         """
 
-                        def imageName = "sum-calculator"
+                        def imageName = "python-sum"
                         // Tagging l'image avec le nom d'utilisateur DockerHub
                         bat "docker tag ${imageName} %DOCKERHUB_USERNAME%/${imageName}:latest"
 
