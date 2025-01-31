@@ -85,6 +85,7 @@ pipeline {
                         // Correction de la commande docker tag avec les bonnes variables
                         bat "docker tag python-sum %DOCKERHUB_USERNAME%/python-sum:latest"
 
+
                         echo "Pushing Docker image..."
                         // Poussée de l'image sur DockerHub
                         bat "docker push %DOCKERHUB_USERNAME%/${imageName}:latest"
