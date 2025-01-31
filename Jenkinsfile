@@ -78,7 +78,7 @@ pipeline {
                         echo "Logging into DockerHub securely..."
                         bat "docker login -u wassim33 -p Wa2sim1611"
 
-                        def imageName = "sum-calculator"
+                        def imageName = "python-sum"
                         // Correction de la commande docker tag
                         bat "docker tag ${imageName} %DOCKERHUB_USERNAME%/${imageName}:latest"
 
