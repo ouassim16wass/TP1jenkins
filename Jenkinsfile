@@ -1,62 +1,104 @@
 pipeline {
     agent any
+
     environment {
-        IMAGE_NAME = 'wassim33/sum-python-image'
-        CONTAINER_ID = ''
-        TEST_FILE = 'test_variables.txt'
+        SUM_PY_PATH = "./sum.py"
+        DIR_PATH = "./"
+        TEST_FILE_PATH = "./test_variables.txt"
     }
+
     stages {
         stage('Build') {
             steps {
-                echo "🔨 Construction de l'image Docker..."
-                bat 'docker build -t sum-python-image .'
-            }
-        }
-        stage('Run') {
-            steps {
                 script {
-                    echo "🚀 Démarrage du conteneur..."
-                    def output = bat(script: 'docker run -d sum-python-image', returnStdout: true).trim()
-                    def lines = output.split('\n')
-                    env.CONTAINER_ID = lines[lines.length - 1].trim()
-                    echo "🆔 ID du conteneur: ${env.CONTAINER_ID}"
+                    echo "Building Docker image..."
+                    bat "docker build -t sum-calculator ${env.DIR_PATH}"
                 }
             }
         }
+
+        stage('Run') {
+            steps {
+                script {
+                    echo "Running Docker container..."
+                    def output = bat(
+                        script: "docker run -d sum-calculator",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Raw Output: ${output}"
+
+                    // Extraire uniquement la dernière partie de la sortie (l'ID du conteneur)
+                    def containerId = output.tokenize()[-1].trim()
+
+                    // Vérification
+                    if (!containerId || containerId.isEmpty()) {
+                        error "Failed to extract Docker container ID. Output: ${output}"
+                    }
+
+                    echo "Extracted Container ID: ${containerId}"
+                    writeFile file: 'container_id.txt', text: containerId
+
+                }
+            }
+        }
+
         stage('Test') {
             steps {
                 script {
-                    echo "✅ Exécution des tests..."
-                    def lines = readFile(TEST_FILE).split('\n')
-                    for (line in lines) {
-                        def args = line.split(' ')
-                        def result = bat(script: "docker exec ${env.CONTAINER_ID} python /app/sum.py ${args[0]} ${args[1]}", returnStdout: true).trim()
-                        echo "Test: ${args[0]} + ${args[1]} = ${result} (Attendu: ${args[2]})"
-                        if (result != args[2]) {
-                            error("❌ Test échoué: ${args[0]} + ${args[1]} != ${result}")
-                        }
+                    echo "Starting tests..."
+
+                    // Lire l'ID du conteneur depuis le fichier
+                    def containerId = readFile('container_id.txt').trim()
+                    echo "Using Container ID: ${containerId}"
+
+                    def testLines = readFile(env.TEST_FILE_PATH).split('\n')
+                    for (line in testLines) {
+                        def vars = line.split(' ')
+                        def arg1 = vars[0]
+                        def arg2 = vars[1]
+                        def expectedSum = vars[2].toFloat()
+
+                        def output = bat(
+                            script: "docker exec ${containerId} python /app/sum.py ${arg1} ${arg2}",
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Test Output: ${output}"
                     }
                 }
             }
         }
-        stage('Deploy') {
-            steps {
-                echo "📦 Déploiement de l'image sur DockerHub..."
-                bat 'docker login -u wassim33 -p Wa2sim1611'
-                bat 'docker tag sum-python-image wassim33/sum-python-image:latest'
-                bat 'docker push wassim33/sum-python-image:latest'
+stage('Deploy to DockerHub') {
+    steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', 
+            usernameVariable: 'DOCKERHUB_USERNAME', 
+            passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+            script {
+                echo "Logging into DockerHub securely..."
+                bat "echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USERNAME% --password-stdin"
+
+                def imageName = "sum-calculator"
+                bat "docker tag ${imageName} %DOCKERHUB_USERNAME%/${imageName}:latest"
+
+                echo "Pushing Docker image..."
+                bat "docker push %DOCKERHUB_USERNAME%/${imageName}:latest"
             }
         }
     }
+}
+
+
+    }
+
     post {
         always {
+            echo "Cleaning up..."
             script {
-                if (env.CONTAINER_ID) {
-                    echo "🛑 Arrêt et suppression du conteneur..."
-                    bat "docker stop ${env.CONTAINER_ID}"
-                    bat "docker rm ${env.CONTAINER_ID}"
-                }
+                def containerId = readFile('container_id.txt').trim()
+                bat "docker stop ${containerId} || true"
+                bat "docker rm ${containerId} || true"
             }
-        }
-    }
+        }
+    }
 }
