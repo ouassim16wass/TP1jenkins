@@ -76,7 +76,7 @@ pipeline {
                     passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                     script {
                         echo "Logging into DockerHub securely..."
-                        bat "echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USERNAME% --password-stdin"
+                        bat "docker login -u wassim33 -p Wa2sim1611"
 
                         def imageName = "sum-calculator"
                         // Correction de la commande docker tag
