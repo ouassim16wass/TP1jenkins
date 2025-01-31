@@ -88,7 +88,7 @@ pipeline {
 
                         echo "Pushing Docker image..."
                         // Poussée de l'image sur DockerHub
-                        bat "docker push %DOCKERHUB_USERNAME%/${imageName}:latest"
+                        bat "docker push %DOCKERHUB_USERNAME% /${imageName}:latest"
                     }
                 }
             }
