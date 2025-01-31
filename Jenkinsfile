@@ -76,15 +76,17 @@ pipeline {
                     passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                     script {
                         echo "Logging into DockerHub securely..."
-                        // Utiliser les credentials récupérés de Jenkins
-                        bat "echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USERNAME% --password-stdin"
+                        // Utilisation du token DockerHub pour l'authentification
+                        bat """
+                        echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USERNAME% --password-stdin
+                        """
 
                         def imageName = "sum-calculator"
-
-                        // Correction de la commande docker tag
+                        // Tagging l'image avec le nom d'utilisateur DockerHub
                         bat "docker tag ${imageName} %DOCKERHUB_USERNAME%/${imageName}:latest"
 
                         echo "Pushing Docker image..."
+                        // Poussée de l'image sur DockerHub
                         bat "docker push %DOCKERHUB_USERNAME%/${imageName}:latest"
                     }
                 }
