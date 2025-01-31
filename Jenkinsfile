@@ -27,18 +27,14 @@ pipeline {
                     ).trim()
 
                     echo "Raw Output: ${output}"
+                    def containerId = output.tokenize()[-1]?.trim()
 
-                    // Extraire uniquement la dernière partie de la sortie (l'ID du conteneur)
-                    def containerId = output.tokenize()[-1].trim()
-
-                    // Vérification
-                    if (!containerId || containerId.isEmpty()) {
+                    if (!containerId) {
                         error "Failed to extract Docker container ID. Output: ${output}"
                     }
 
                     echo "Extracted Container ID: ${containerId}"
-                    writeFile file: 'container_id.txt', text: containerId
-
+                    env.CONTAINER_ID = containerId
                 }
             }
         }
@@ -47,14 +43,17 @@ pipeline {
             steps {
                 script {
                     echo "Starting tests..."
-
-                    // Lire l'ID du conteneur depuis le fichier
-                    def containerId = readFile('container_id.txt').trim()
+                    def containerId = env.CONTAINER_ID
                     echo "Using Container ID: ${containerId}"
 
                     def testLines = readFile(env.TEST_FILE_PATH).split('\n')
                     for (line in testLines) {
                         def vars = line.split(' ')
+                        if (vars.size() < 3) {
+                            echo "Skipping invalid test line: ${line}"
+                            continue
+                        }
+
                         def arg1 = vars[0]
                         def arg2 = vars[1]
                         def expectedSum = vars[2].toFloat()
@@ -69,36 +68,34 @@ pipeline {
                 }
             }
         }
-stage('Deploy to DockerHub') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', 
-            usernameVariable: 'DOCKERHUB_USERNAME', 
-            passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-            script {
-                echo "Logging into DockerHub securely..."
-                bat "echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USERNAME% --password-stdin"
 
-                def imageName = "sum-calculator"
-                bat "docker tag ${imageName} %DOCKERHUB_USERNAME%/${imageName}:latest"
+        stage('Deploy to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', 
+                    usernameVariable: 'DOCKERHUB_USERNAME', 
+                    passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                    script {
+                        echo "Logging into DockerHub securely..."
+                        bat "echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USERNAME% --password-stdin"
 
-                echo "Pushing Docker image..."
-                bat "docker push %DOCKERHUB_USERNAME%/${imageName}:latest"
+                        def imageName = "sum-calculator"
+                        bat "docker tag ${imageName} %DOCKERHUB_USERNAME%/${imageName}:latest"
+
+                        echo "Pushing Docker image..."
+                        bat "docker push %DOCKERHUB_USERNAME%/${imageName}:latest"
+                    }
+                }
             }
         }
-    }
-}
-
-
     }
 
     post {
         always {
             echo "Cleaning up..."
             script {
-                def containerId = readFile('container_id.txt').trim()
-                bat "docker stop ${containerId} || true"
-                bat "docker rm ${containerId} || true"
+                bat "docker stop ${env.CONTAINER_ID} || true"
+                bat "docker rm ${env.CONTAINER_ID} || true"
             }
-        }
-    }
+        }
+    }
 }
